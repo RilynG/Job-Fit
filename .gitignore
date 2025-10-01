@@ -1,0 +1,17 @@
+# dependencies
+Back/node_modules/
+Front/node_modules/
+
+# runtime / uploads
+uploads/
+
+# builds
+dist/
+build/
+
+# env
+.env
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
