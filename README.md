@@ -6,6 +6,7 @@ It analyzes skills, computes a match score, highlights gaps, and provides tailor
 - **Backend:** Node.js + Express API (with PDF/DOCX parsing)  
 - **Frontend:** React (Vite) + TailwindCSS UI  
 - **Deployed API:** [Render](https://job-fit-m5sz.onrender.com)  
+- **Deployed Frontend:** [Vercel](https://job-fit-beta.vercel.app/)
 
 ---
 
