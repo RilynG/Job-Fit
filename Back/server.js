@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import { extractSkills, matchSkills } from './srs/core.js';
-import { readResumeFile } from './srs/fileReader.js';
+import { extractSkills, matchSkills } from './src/core.js';
+import { readResumeFile } from './src/fileReader.js';
 import multer from 'multer';
 import fs from 'fs';
+import { tips } from './src/features.js';
 
 
 const upload = multer({ dest: 'uploads/', limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
@@ -38,8 +39,11 @@ app.post('/score', upload.single('resumeFile'), async (req, res) => {
     const SAFE = 50000; // 50k characters limit
     const jobSkills = extractSkills(jobDescription.slice(0, SAFE));
     const result = matchSkills(jobSkills, resumeText.slice(0, SAFE));
+    const suggestions = tips(result);
 
-    res.json(result);
+    res.json({ 
+        ...result, 
+        tips: suggestions});
 } catch (error) {
     console.error('Error processing /score request:', error);
     res.status(500).json({ error: 'failed it is stuck here to parse' });
