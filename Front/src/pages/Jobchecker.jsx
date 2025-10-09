@@ -1,30 +1,62 @@
-import React from 'react'
-import { useState } from "react";
-
-
-
+import React, { useState } from "react";
 
 const Jobchecker = () => {
   const [jobDescription, setJobDescription] = useState("");
   const [resumeText, setResumeText] = useState("");
+  const [resumeFile, setResumeFile] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.type === "application/pdf") {
+      
+      setResumeText(`📄 Uploaded PDF: ${file.name}`);
+      setResumeFile(file);
+    } else if (file.name.endsWith(".docx")) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const arrayBuffer = event.target.result;
+        setResumeText(`📄 Uploaded DOCX: ${file.name}`);
+      };
+      reader.readAsArrayBuffer(file);
+      setResumeFile(file);
+    } else {
+      setError("Only PDF or DOCX files are allowed.");
+      e.target.value = "";
+    }
+  };
+
+  const handleClear = () => {
+    setResumeText("");
+    setResumeFile(null);
+    document.getElementById("resumeFileInput").value = "";
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
     setError("");
     setResult(null);
 
-
     try {
+      const formData = new FormData();
+      formData.append("jobDescription", jobDescription);
+
+      if (resumeFile) {
+        formData.append("resumeFile", resumeFile);
+      } else if (resumeText.trim()) {
+        formData.append("resumeText", resumeText);
+      } else {
+        throw new Error("Please provide resume text or upload a file.");
+      }
+
       const response = await fetch("https://job-fit-m5sz.onrender.com/score", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobDescription, resumeText }),
+        body: formData,
       });
-
 
       if (!response.ok) throw new Error("API request failed");
       const data = await response.json();
@@ -36,7 +68,6 @@ const Jobchecker = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
@@ -45,16 +76,15 @@ const Jobchecker = () => {
             Job Fit Checker
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Paste a job description and your resume text to see your match.
+            Paste a job description and your resume text, or upload a PDF/DOCX file.
           </p>
         </div>
       </header>
 
-
       <main className="mx-auto max-w-3xl px-4 py-8">
         <div className="grid gap-6">
-          {/* Inputs */}
           <div className="grid gap-6 md:grid-cols-2">
+            {/* Job Description */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Job Description
@@ -62,41 +92,55 @@ const Jobchecker = () => {
               <textarea
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
-                rows={10}
-                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 outline-none ring-0 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                rows={12}
+                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                 placeholder="Paste the job description here…"
               />
               <button
                 type="button"
                 onClick={() => setJobDescription("")}
-                className="mt-2 self-end text-xs text-red-500 hover:underline"
+                className="mt-2 text-xs text-red-500 hover:underline"
               >
                 Clear
               </button>
             </div>
 
-
+            {/* Resume */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Resume Text
+                Resume (Text or File)
               </label>
               <textarea
                 value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
-                rows={10}
-                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 outline-none ring-0 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                placeholder="Paste your resume text here…"
+                onChange={(e) => {
+                  setResumeText(e.target.value);
+                  setResumeFile(null);
+                  document.getElementById("resumeFileInput").value = "";
+                }}
+                rows={12}
+                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                placeholder="Paste your resume text or upload a file below…"
               />
+
+              <div className="mt-3">
+                <input
+                  id="resumeFileInput"
+                  type="file"
+                  accept=".pdf,.docx"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-white hover:file:bg-indigo-700"
+                />
+              </div>
+
               <button
                 type="button"
-                onClick={() => setResumeText("")}
-                className="mt-2 self-end text-xs text-red-500 hover:underline"
+                onClick={handleClear}
+                className="mt-2 text-xs text-red-500 hover:underline"
               >
                 Clear
               </button>
             </div>
           </div>
-
 
           {/* Actions */}
           <div className="flex items-center gap-3">
@@ -108,12 +152,8 @@ const Jobchecker = () => {
               {loading ? "Checking…" : "Check Match"}
             </button>
 
-
-            {loading && (
-              <span className="text-sm text-gray-500">Analyzing…</span>
-            )}
+            {loading && <span className="text-sm text-gray-500">Analyzing…</span>}
           </div>
-
 
           {/* Error */}
           {error && (
@@ -121,7 +161,6 @@ const Jobchecker = () => {
               {error}
             </div>
           )}
-
 
           {/* Results */}
           {result && (
@@ -133,8 +172,6 @@ const Jobchecker = () => {
                 </span>
               </div>
 
-
-              {/* Progress bar */}
               <div className="mb-6">
                 <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
                   <div
@@ -144,57 +181,49 @@ const Jobchecker = () => {
                 </div>
               </div>
 
-
+              {/* Skills */}
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <h3 className="mb-2 text-sm font-semibold text-gray-800">
                     Matched Skills
                   </h3>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="font-medium">Hard:</span>{" "}
-                      {result.matchedSkills?.hard?.length
-                        ? result.matchedSkills.hard.join(", ")
-                        : "None"}
-                    </p>
-                    <p>
-                      <span className="font-medium">Soft:</span>{" "}
-                      {result.matchedSkills?.soft?.length
-                        ? result.matchedSkills.soft.join(", ")
-                        : "None"}
-                    </p>
-                  </div>
+                  <p className="text-sm">
+                    <span className="font-medium">Hard:</span>{" "}
+                    {result.matchedSkills?.hard?.length
+                      ? result.matchedSkills.hard.join(", ")
+                      : "None"}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Soft:</span>{" "}
+                    {result.matchedSkills?.soft?.length
+                      ? result.matchedSkills.soft.join(", ")
+                      : "None"}
+                  </p>
                 </div>
-
 
                 <div>
                   <h3 className="mb-2 text-sm font-semibold text-gray-800">
                     Missing Skills
                   </h3>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="font-medium">Hard:</span>{" "}
-                      {result.missingSkills?.hard?.length
-                        ? result.missingSkills.hard.join(", ")
-                        : "None"}
-                    </p>
-                    <p>
-                      <span className="font-medium">Soft:</span>{" "}
-                      {result.missingSkills?.soft?.length
-                        ? result.missingSkills.soft.join(", ")
-                        : "None"}
-                    </p>
-                  </div>
+                  <p className="text-sm">
+                    <span className="font-medium">Hard:</span>{" "}
+                    {result.missingSkills?.hard?.length
+                      ? result.missingSkills.hard.join(", ")
+                      : "None"}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Soft:</span>{" "}
+                    {result.missingSkills?.soft?.length
+                      ? result.missingSkills.soft.join(", ")
+                      : "None"}
+                  </p>
                 </div>
               </div>
-
 
               {/* Tips */}
               {result.tips?.length ? (
                 <div className="mt-6">
-                  <h3 className="mb-2 text-sm font-semibold text-gray-800">
-                    Tips
-                  </h3>
+                  <h3 className="mb-2 text-sm font-semibold text-gray-800">Tips</h3>
                   <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700">
                     {result.tips.map((tip, idx) => (
                       <li key={idx}>{tip}</li>
@@ -207,8 +236,7 @@ const Jobchecker = () => {
         </div>
       </main>
     </div>
-  )
-}
+  );
+};
 
-
-export default Jobchecker
+export default Jobchecker;
