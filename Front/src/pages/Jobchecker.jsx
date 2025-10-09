@@ -1,30 +1,42 @@
-import React from 'react'
-import { useState } from "react";
-
-
-
+import React, { useState } from "react";
 
 const Jobchecker = () => {
   const [jobDescription, setJobDescription] = useState("");
   const [resumeText, setResumeText] = useState("");
+  const [resumeFile, setResumeFile] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const handleFileChange = (e) => {
+    setResumeFile(e.target.files[0]);
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
     setError("");
     setResult(null);
 
-
     try {
-      const response = await fetch("https://job-fit-m5sz.onrender.com/score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobDescription, resumeText }),
-      });
+      let response;
+      if (resumeFile) {
+        // 🟢 File upload mode
+        const formData = new FormData();
+        formData.append("jobDescription", jobDescription);
+        formData.append("resumeFile", resumeFile);
 
+        response = await fetch("https://job-fit-m5sz.onrender.com/score", {
+          method: "POST",
+          body: formData, // don't set Content-Type, browser will set it
+        });
+      } else {
+        // 🟢 Text mode
+        response = await fetch("https://job-fit-m5sz.onrender.com/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobDescription, resumeText }),
+        });
+      }
 
       if (!response.ok) throw new Error("API request failed");
       const data = await response.json();
@@ -36,7 +48,6 @@ const Jobchecker = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
@@ -45,75 +56,59 @@ const Jobchecker = () => {
             Job Fit Checker
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Paste a job description and your resume text to see your match.
+            Paste a job description and upload your resume (or paste text).
           </p>
         </div>
       </header>
 
-
       <main className="mx-auto max-w-3xl px-4 py-8">
         <div className="grid gap-6">
-          {/* Inputs */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Job Description
-              </label>
-              <textarea
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                rows={10}
-                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 outline-none ring-0 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                placeholder="Paste the job description here…"
-              />
-              <button
-                type="button"
-                onClick={() => setJobDescription("")}
-                className="mt-2 self-end text-xs text-red-500 hover:underline"
-              >
-                Clear
-              </button>
-            </div>
-
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Resume Text
-              </label>
-              <textarea
-                value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
-                rows={10}
-                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 outline-none ring-0 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                placeholder="Paste your resume text here…"
-              />
-              <button
-                type="button"
-                onClick={() => setResumeText("")}
-                className="mt-2 self-end text-xs text-red-500 hover:underline"
-              >
-                Clear
-              </button>
-            </div>
+          {/* Job Description */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Job Description
+            </label>
+            <textarea
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+              rows={6}
+              className="w-full rounded-lg border border-gray-300 p-3 text-sm"
+              placeholder="Paste the job description here…"
+            />
           </div>
 
+          {/* Resume Options */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Resume (paste OR upload)
+            </label>
+            <textarea
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
+              rows={6}
+              className="w-full rounded-lg border border-gray-300 p-3 text-sm mb-2"
+              placeholder="Paste your resume text here…"
+              disabled={resumeFile !== null} // disable if file chosen
+            />
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.txt"
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-600"
+              disabled={resumeText.length > 0} // disable if text entered
+            />
+          </div>
 
           {/* Actions */}
           <div className="flex items-center gap-3">
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
             >
               {loading ? "Checking…" : "Check Match"}
             </button>
-
-
-            {loading && (
-              <span className="text-sm text-gray-500">Analyzing…</span>
-            )}
           </div>
-
 
           {/* Error */}
           {error && (
@@ -121,7 +116,6 @@ const Jobchecker = () => {
               {error}
             </div>
           )}
-
 
           {/* Results */}
           {result && (
@@ -133,82 +127,44 @@ const Jobchecker = () => {
                 </span>
               </div>
 
-
-              {/* Progress bar */}
-              <div className="mb-6">
-                <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
-                  <div
-                    className="h-3 rounded-full bg-indigo-600 transition-all"
-                    style={{ width: `${result.score || 0}%` }}
-                  />
-                </div>
+              <div className="h-3 w-full rounded-full bg-gray-200">
+                <div
+                  className="h-3 rounded-full bg-indigo-600"
+                  style={{ width: `${result.score || 0}%` }}
+                />
               </div>
 
-
-              <div className="grid gap-6 md:grid-cols-2">
+              {/* Skills */}
+              <div className="grid gap-6 md:grid-cols-2 mt-6">
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold text-gray-800">
-                    Matched Skills
-                  </h3>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="font-medium">Hard:</span>{" "}
-                      {result.matchedSkills?.hard?.length
-                        ? result.matchedSkills.hard.join(", ")
-                        : "None"}
-                    </p>
-                    <p>
-                      <span className="font-medium">Soft:</span>{" "}
-                      {result.matchedSkills?.soft?.length
-                        ? result.matchedSkills.soft.join(", ")
-                        : "None"}
-                    </p>
-                  </div>
+                  <h3 className="font-semibold">Matched Skills</h3>
+                  <p>Hard: {result.matchedSkills?.hard?.join(", ") || "None"}</p>
+                  <p>Soft: {result.matchedSkills?.soft?.join(", ") || "None"}</p>
                 </div>
-
-
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold text-gray-800">
-                    Missing Skills
-                  </h3>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      <span className="font-medium">Hard:</span>{" "}
-                      {result.missingSkills?.hard?.length
-                        ? result.missingSkills.hard.join(", ")
-                        : "None"}
-                    </p>
-                    <p>
-                      <span className="font-medium">Soft:</span>{" "}
-                      {result.missingSkills?.soft?.length
-                        ? result.missingSkills.soft.join(", ")
-                        : "None"}
-                    </p>
-                  </div>
+                  <h3 className="font-semibold">Missing Skills</h3>
+                  <p>Hard: {result.missingSkills?.hard?.join(", ") || "None"}</p>
+                  <p>Soft: {result.missingSkills?.soft?.join(", ") || "None"}</p>
                 </div>
               </div>
-
 
               {/* Tips */}
-              {result.tips?.length ? (
+              {result.tips?.length > 0 && (
                 <div className="mt-6">
-                  <h3 className="mb-2 text-sm font-semibold text-gray-800">
-                    Tips
-                  </h3>
-                  <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700">
+                  <h3 className="font-semibold">Tips</h3>
+                  <ul className="list-disc pl-5 text-sm">
                     {result.tips.map((tip, idx) => (
                       <li key={idx}>{tip}</li>
                     ))}
                   </ul>
                 </div>
-              ) : null}
+              )}
             </section>
           )}
         </div>
       </main>
     </div>
-  )
-}
+  );
+};
 
-
-export default Jobchecker
+export default Jobchecker;
