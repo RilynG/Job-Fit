@@ -58,7 +58,7 @@ const Jobchecker = () => {
         body: formData,
       });
 
-      if (!response.ok) throw new Error("API request failed");
+      if (!response.ok) throw new Error("No Job Description Provided");
       const data = await response.json();
       setResult(data);
     } catch (err) {
