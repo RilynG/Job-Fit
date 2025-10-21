@@ -40,7 +40,7 @@ It analyzes skills, computes a match score, highlights gaps, and provides tailor
 - [x] Stage 3 — File upload parsing (PDF/DOCX/TXT)  
 - [x] Stage 4 — Tips function  
 - [x] Stage 5 — Frontend MVP (Paste Only)  
-- [ ] Stage 6 — File uploads on frontend  
+- [x] Stage 6 — File uploads on frontend  
 - [ ] Stage 7 — Authentication & saved analyses  
 - [ ] Stage 8 — Cover letter generator
 - [ ] Stage 9 — AI-powered suggestions
